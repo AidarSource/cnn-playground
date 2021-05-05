@@ -154,8 +154,103 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25):
 all_train_files = glob.glob(os.path.join(train_dir, '*.jpg'))
 train_list, val_list = train_test_split(all_train_files, random_state=42)
 
-print(len(train_list))
-print(len(val_list))
+
+# Dataset class
+class DogVsCatDataset(Dataset):
+    def __init__(self, file_list, transform=None):
+        self.file_list = file_list
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.file_list)
+
+    def __getitem__(self, idx):
+        if torch.is_tensor(idx):
+            idx = idx.tolist()
+
+        img_name = self.file_list[idx]
+        image = Image.open(img_name)
+        if self.transform:
+            image = self.transform(image)
+
+        label_category = extract_class_from(img_name)
+        label = 1 if label_category == 'dog' else 0
+
+        return image, label
+
+
+# Data loaders
+data_transforms = {
+    'train': transforms.Compose([
+        transforms.RandomResizedCrop(input_size, scale=(0.5, 1.0)),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        transforms.Normalize(mean, std)
+    ]),
+    'val': transforms.Compose([
+        transforms.Resize(input_size),
+        transforms.CenterCrop(input_size),
+        transforms.ToTensor(),
+        transforms.Normalize(mean, std)
+    ])
+}
+
+# Create training and validation datasets
+image_datasets = {
+    'train': DogVsCatDataset(train_list, transform=data_transforms['train'])
+    'val': DogVsCatDataset(val_list, transform=data_transforms['val'])
+}
+# Create training and validation dataloaders
+dataloaders_dict = {x: DataLoader(image_datasets[x],
+                                  batch_size=batch_size,
+                                  shuffle=True,
+                                  num_workers=num_workers
+                                  ) for x in ['train', 'val']}
+
+# Detect if we have a GPU available
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+# Initialize and Reshape the Networks
+model_ft = models.vgg16(pretrained=True)
+model_ft.classifier[6] = nn.Linear(4096, num_classes)
+
+# -------------------
+# Create the Optimizer
+
+# Send the model to GPU
+model_ft = model_ft.to(device)
+
+# Gather the parameters to be optimized/updated in this run. If we are
+# finetuning we will be updating all parameters. However, if we are
+# doing feature extract method, we will only update the parameters
+# that we have just initialized, i.e. the parameters with requires_grad
+# is True.
+params_to_update = model_ft.parameters()
+print("Params to learn:")
+if feature_extract:
+    params_to_update = []
+    for name, param in model_ft.named_parameters():
+        if param.requires_grad == True:
+            params_to_update.append(param)
+            print("\t", name)
+else:
+    for name, param in model_ft.named_parameters():
+        if param.requires_grad == True:
+            print("\t", name)
+
+# Observe that all parameters are being optimized
+optimizer_ft = optim.SGD(params_to_update, lr=0.001, momentum=0.9)
+# -------------------
+
+
+# Run Training and Validation Step
+
+# Setup the loss fxn
+criterion = nn.CrossEntropyLoss()
+# Train and evaluate
+model_ft, hist = train_model(model_ft, dataloaders_dict, criterion, optimizer_ft, num_epochs=num_epochs)
+
+
 
 
 
