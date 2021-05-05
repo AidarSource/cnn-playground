@@ -197,7 +197,7 @@ data_transforms = {
 
 # Create training and validation datasets
 image_datasets = {
-    'train': DogVsCatDataset(train_list, transform=data_transforms['train'])
+    'train': DogVsCatDataset(train_list, transform=data_transforms['train']),
     'val': DogVsCatDataset(val_list, transform=data_transforms['val'])
 }
 # Create training and validation dataloaders
