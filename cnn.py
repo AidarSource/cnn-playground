@@ -251,12 +251,42 @@ criterion = nn.CrossEntropyLoss()
 model_ft, hist = train_model(model_ft, dataloaders_dict, criterion, optimizer_ft, num_epochs=num_epochs)
 
 
+# Predict
+test_list = glob.glob(os.path.join(test_dir, '*.jpg'))
+test_data_transform = data_transforms['val']
 
+ids = []
+labels = []
 
+with torch.no_grad():
+    for test_path in tqdm(test_list):
+        img = Image.open(test_path)
+        img = test_data_transform(img)
+        img = img.unsqueeze(0)
+        img = img.to(device)
 
+        model_ft.eval()
+        outputs = model_ft(img)
+        preds = F.softmax(outputs, dim=1)[:, 1].tolist()
 
+        test_id = extract_class_from(test_path)
+        ids.append(int(test_id))
+        labels.append(preds[0])
 
+# Check how well the prediction went
+template = '"{}" with {:.2%} confidence'
+def pred_result_message(pred):
+    if pred > 0.5:
+        return template.format('dog', pred)
+    else:
+        return template.format('cat', 1 - pred)
 
+fig, axes = plt.subplots(nrows=2,
+                         ncols=3,
+                         figsize=(18, 12))
+for img_path, label, ax in zip(test_list, labels, axes.ravel()):
+    ax.set_title(pred_result_message(label))
+    ax.imshow(Image.open(img_path))
 
 
 
