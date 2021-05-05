@@ -99,8 +99,8 @@ def train_model(model, dataloaders, criterion, optimizer, num_epochs=25):
 
             # Iterate over data
             for inputs, labels in tqdm(dataloaders[phase]):
-                inputs = inputs.to('gpu')
-                labels = labels.to('gpu')
+                inputs = inputs.to('cuda')
+                labels = labels.to('cuda')
 
                 # zero the parameter gradients
                 optimizer.zero_grad()
