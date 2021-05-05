@@ -25,7 +25,7 @@ from tqdm.notebook import tqdm
 
 
 # Google colab dataset load
-with zipfile.ZipFile('drive/My Drive/Data Set/dogs-vs-cats-redux-kernels-edition.zip') as entire_zip:
+with zipfile.ZipFile('content/gdrive/My Drive/Data Set/dogs-vs-cats-redux-kernels-edition.zip') as entire_zip:
     entire_zip.extractall('.')
 
 with zipfile.ZipFile('train.zip') as train_zip:
